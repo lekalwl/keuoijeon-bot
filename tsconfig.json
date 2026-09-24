@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "src/commands/attendance.ts",
+    "src/commands/blackjack.ts",
+    "src/commands/goldfish.ts",
+    "src/commands/indianPoker.ts",
+    "src/commands/investigate.ts",
+    "src/commands/omikuji.ts",
+    "src/commands/order.ts",
+    "src/commands/pachinko.ts",
+    "src/commands/shootingGallery.ts",
+    "src/commands/suitDuel.ts",
+    "src/services/attendance.ts",
+    "src/services/investigation.ts",
+    "src/services/orders.ts",
+    "src/games/blackjack.ts",
+    "src/games/pachinko.ts"
+  ]
+}

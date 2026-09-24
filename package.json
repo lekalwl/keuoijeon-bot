@@ -1,0 +1,29 @@
+{
+  "name": "keuoijeon-discord-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "deploy": "npm run build && node dist/deploy-commands.js",
+    "setup-sheet": "npm run build && node dist/setup-sheet.js",
+    "seed-fishing": "npm run build && node dist/seed-fishing-content.js",
+    "seed-chuseok-fishing": "npm run build && node dist/seed-chuseok-fishing.js",
+    "seed-goblin-shop": "npm run build && node dist/seed-goblin-shop.js",
+    "build-shop-catalog": "npm run build && node dist/build-goblin-shop-catalog.js",
+    "share-public-shop": "npm run build && node dist/share-public-shop.js",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7",
+    "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
