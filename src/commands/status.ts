@@ -9,13 +9,17 @@ import {
   TextInputStyle
 } from 'discord.js';
 import { baseStatBonus, getActiveCharacter, getCharacter, requireActiveCharacter, setCharacterMemo, type Character } from '../services/characters.js';
-import { getActiveEffects } from '../services/effects.js';
+import { getActiveEffects, getPossessionEffects, type EffectStat } from '../services/effects.js';
 import { displayNameForUser, interactionDisplayName } from '../utils/names.js';
 import { ephemeral, safeErrorReply } from '../utils/reply.js';
 import type { BotCommand } from './types.js';
 
 function signed(value: number): string {
   return value > 0 ? `+${value}` : String(value);
+}
+
+function statLabel(stat: EffectStat): string {
+  return { strength: '힘', agility: '민첩', dexterity: '손재주', luck: '행운', all: '전체' }[stat];
 }
 
 function memoButtons(ownerUserId: string, characterId: string): ActionRowBuilder<ButtonBuilder> {
@@ -26,16 +30,24 @@ function memoButtons(ownerUserId: string, characterId: string): ActionRowBuilder
 }
 
 async function statusEmbed(character: Character): Promise<EmbedBuilder> {
-  const effects = await getActiveEffects(character.characterId);
+  const [effects, possessionEffects] = await Promise.all([
+    getActiveEffects(character.characterId),
+    getPossessionEffects(character.characterId)
+  ]);
   const now = Date.now();
   const effectText = effects.length
     ? effects
         .map((effect) => {
           const minutes = Math.max(1, Math.ceil((effect.expiresAt.getTime() - now) / 60_000));
-          return `${effect.effectName} · ${effect.stat} ${signed(effect.modifier)} · ${minutes}분 남음`;
+          return `${effect.effectName} · ${statLabel(effect.stat)} ${signed(effect.modifier)} · ${minutes}분 남음`;
         })
         .join('\n')
     : '적용 중인 효과 없음';
+  const possessionText = possessionEffects.length
+    ? possessionEffects
+        .map((effect) => `${effect.effectName} · ${statLabel(effect.stat)} ${signed(effect.modifier)}${effect.stacks > 1 ? ` · ${effect.stacks}중첩` : ''}`)
+        .join('\n')
+    : '소지 아이템 효과 없음';
   const embed = new EmbedBuilder()
     .setTitle(`${character.characterName}의 상태`)
     .addFields(
@@ -55,6 +67,7 @@ async function statusEmbed(character: Character): Promise<EmbedBuilder> {
         inline: true
       },
       { name: '현재 효과', value: effectText },
+      { name: '소지 아이템 효과', value: possessionText },
       { name: '메모', value: character.memo || '메모 없음' }
     );
   if (/^https?:\/\//i.test(character.sdImageUrl)) embed.setThumbnail(character.sdImageUrl);

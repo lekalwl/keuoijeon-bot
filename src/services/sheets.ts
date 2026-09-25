@@ -21,10 +21,11 @@ export const SHEET_HEADERS = {
     'sd_image_url',
     'memo'
   ],
-  Items: ['item_id', 'item_name', 'usable', 'use_text', 'consume_on_use', 'description', 'shop_enabled', 'sell_enabled', 'price'],
+  Items: ['item_id', 'item_name', 'usable', 'use_text', 'consume_on_use', 'description', 'shop_enabled', 'sell_enabled', 'price', 'bound'],
   ItemUseTexts: ['item_id', 'chance', 'use_text'],
   Inventory: ['character_id', 'item_id', 'quantity'],
   StatItemEffects: ['item_id', 'effect_name', 'stat', 'modifier', 'duration_minutes', 'stackable'],
+  InventoryEffects: ['item_id', 'effect_name', 'stat', 'modifier', 'per_quantity', 'max_stacks'],
   ActiveEffects: ['effect_id', 'character_id', 'source_item_id', 'effect_name', 'stat', 'modifier', 'starts_at', 'expires_at'],
   SpecialItemEffects: ['item_id', 'effect_key', 'value', 'chance'],
   ActiveSpecialEffects: ['effect_id', 'character_id', 'source_item_id', 'effect_key', 'value', 'chance', 'charges', 'created_at'],

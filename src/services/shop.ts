@@ -56,6 +56,9 @@ export async function sellItem(characterId: string, itemName: string, quantity: 
     if (!item) {
       throw new Error('해당 이름의 아이템을 찾을 수 없습니다.');
     }
+    if (item.bound) {
+      throw new Error('귀속 아이템은 판매할 수 없습니다.');
+    }
     if (!item.sellEnabled) {
       throw new Error('이 아이템은 되팔 수 없습니다.');
     }

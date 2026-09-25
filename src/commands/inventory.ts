@@ -14,7 +14,9 @@ export const inventoryCommand: BotCommand = {
     try {
       const character = await requireActiveCharacter(interaction.user.id);
       const entries = await getInventory(character.characterId);
-      const lines = entries.length === 0 ? ['- 보유 아이템 없음'] : entries.map((entry) => `- ${entry.item.itemName} x${entry.quantity}`);
+      const lines = entries.length === 0
+        ? ['- 보유 아이템 없음']
+        : entries.map((entry) => `- ${entry.item.itemName} x${entry.quantity}${entry.item.bound ? ' [귀속]' : ''}`);
       await interaction.editReply({
         content: `**${character.characterName} 인벤토리**\n보유 포인트: **${formatPoints(character.points)}**\n\n아이템\n${lines.join('\n')}`
       });

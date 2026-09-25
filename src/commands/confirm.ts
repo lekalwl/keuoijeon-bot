@@ -85,6 +85,7 @@ export const confirmCommand: BotCommand = {
         '',
         `가격: ${item.price > 0 ? formatPoints(item.price) : '미설정'}`,
         `보유 수량: ${entry.quantity}`,
+        `귀속 여부: ${item.bound ? '귀속됨 (판매·전달·돛거 불가)' : '귀속되지 않음'}`,
         `사용 가능: ${item.usable ? '가능' : '불가'}`
       ];
 

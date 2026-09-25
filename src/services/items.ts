@@ -9,6 +9,7 @@ export interface Item {
   consumeOnUse: boolean;
   shopEnabled: boolean;
   sellEnabled: boolean;
+  bound: boolean;
   price: number;
 }
 
@@ -29,6 +30,7 @@ export async function getItems(): Promise<Item[]> {
       consumeOnUse: toBool(row.consume_on_use ?? ''),
       shopEnabled: toBool(row.shop_enabled ?? ''),
       sellEnabled: row.sell_enabled === undefined || row.sell_enabled.trim() === '' ? true : toBool(row.sell_enabled),
+      bound: toBool(row.bound ?? ''),
       price: Math.max(0, Number.parseInt(row.price ?? '0', 10) || 0)
     }));
 }

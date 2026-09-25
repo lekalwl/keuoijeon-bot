@@ -68,6 +68,9 @@ export async function transferItem(fromCharacterId: string, toCharacterId: strin
   if (!item) {
     throw new Error('해당 이름의 아이템을 찾을 수 없습니다.');
   }
+  if (item.bound) {
+    throw new Error('귀속 아이템은 다른 캐릭터에게 전달하거나 빼앗을 수 없습니다.');
+  }
   await withLock('inventory', async () => {
     const rows = await getRows('Inventory');
     const fromRow = rows.find((row) => row.character_id === fromCharacterId && row.item_id === item.itemId);

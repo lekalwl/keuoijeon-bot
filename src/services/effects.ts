@@ -17,6 +17,17 @@ export interface ActiveEffect {
   expiresAt: Date;
 }
 
+export interface PossessionEffect {
+  itemId: string;
+  effectName: string;
+  stat: EffectStat;
+  modifier: number;
+  quantity: number;
+  stacks: number;
+}
+
+export type StatBonusEffect = ActiveEffect | PossessionEffect;
+
 interface ItemEffect {
   itemId: string;
   effectName: string;
@@ -66,10 +77,98 @@ export async function getActiveEffects(characterId: string): Promise<ActiveEffec
     }));
 }
 
-export async function statEffectBonus(characterId: string, stat: StatKey): Promise<{ total: number; effects: ActiveEffect[] }> {
+export async function getPossessionEffects(characterId: string): Promise<PossessionEffect[]> {
+  const [inventory, definitions] = await Promise.all([getRows('Inventory'), getCachedRows('InventoryEffects')]);
+  const quantities = new Map(
+    inventory
+      .filter((row) => row.character_id === characterId && integer(row.quantity) > 0)
+      .map((row) => [row.item_id, integer(row.quantity)])
+  );
+  return definitions
+    .filter((row) => quantities.has(row.item_id) && validStat(row.stat))
+    .map((row) => {
+      const quantity = quantities.get(row.item_id) ?? 0;
+      const perQuantity = (row.per_quantity ?? '').trim().toUpperCase() === 'TRUE';
+      const configuredMax = integer(row.max_stacks);
+      const stacks = perQuantity ? Math.min(quantity, configuredMax > 0 ? configuredMax : quantity) : 1;
+      return {
+        itemId: row.item_id,
+        effectName: row.effect_name || row.item_id,
+        stat: row.stat as EffectStat,
+        modifier: integer(row.modifier) * stacks,
+        quantity,
+        stacks
+      };
+    });
+}
+
+export async function statEffectBonus(characterId: string, stat: StatKey): Promise<{ total: number; effects: StatBonusEffect[] }> {
   if (stat === 'personal_trait') return { total: 0, effects: [] };
-  const effects = (await getActiveEffects(characterId)).filter((effect) => effect.stat === stat || effect.stat === 'all');
+  const [active, possession] = await Promise.all([getActiveEffects(characterId), getPossessionEffects(characterId)]);
+  const effects: StatBonusEffect[] = [...active, ...possession].filter((effect) => effect.stat === stat || effect.stat === 'all');
   return { total: effects.reduce((sum, effect) => sum + effect.modifier, 0), effects };
+}
+
+export async function grantAdminEffect(
+  characterId: string,
+  effectName: string,
+  stat: EffectStat,
+  modifier: number,
+  durationMinutes: number
+): Promise<ActiveEffect> {
+  if (!validStat(stat)) throw new Error('올바르지 않은 스탯입니다.');
+  if (!Number.isInteger(modifier) || modifier === 0 || modifier < -100 || modifier > 100) {
+    throw new Error('효과 수치는 -100~100 사이의 0이 아닌 정수여야 합니다.');
+  }
+  if (!Number.isInteger(durationMinutes) || durationMinutes < 1 || durationMinutes > 43_200) {
+    throw new Error('지속시간은 1~43200분 사이여야 합니다.');
+  }
+  const name = effectName.trim();
+  if (!name || name.length > 80) throw new Error('효과명은 1~80자로 입력해주세요.');
+  return withLock('active-effects', async () => {
+    const rows = await getRows('ActiveEffects');
+    const startsAt = new Date();
+    const expiresAt = new Date(startsAt.getTime() + durationMinutes * 60_000);
+    const effect: ActiveEffect = {
+      effectId: randomUUID(),
+      characterId,
+      sourceItemId: 'ADMIN',
+      effectName: name,
+      stat,
+      modifier,
+      startsAt,
+      expiresAt
+    };
+    rows.push({
+      effect_id: effect.effectId,
+      character_id: characterId,
+      source_item_id: effect.sourceItemId,
+      effect_name: effect.effectName,
+      stat: effect.stat,
+      modifier: String(effect.modifier),
+      starts_at: startsAt.toISOString(),
+      expires_at: expiresAt.toISOString()
+    });
+    await replaceRows('ActiveEffects', rows.filter((row) => new Date(row.expires_at).getTime() > startsAt.getTime()));
+    clearStaticSheetCache('ActiveEffects');
+    return effect;
+  });
+}
+
+export async function removeAdminEffects(characterId: string, effectName?: string): Promise<number> {
+  const name = effectName?.trim();
+  return withLock('active-effects', async () => {
+    const rows = await getRows('ActiveEffects');
+    const kept = rows.filter(
+      (row) => !(row.character_id === characterId && row.source_item_id === 'ADMIN' && (!name || row.effect_name === name))
+    );
+    const removed = rows.length - kept.length;
+    if (removed > 0) {
+      await replaceRows('ActiveEffects', kept);
+      clearStaticSheetCache('ActiveEffects');
+    }
+    return removed;
+  });
 }
 
 export async function applyItemEffects(characterId: string, itemId: string, quantity: number): Promise<ActiveEffect[]> {
